@@ -1,8 +1,8 @@
 package main
 
 import (
-	"./app"
-	"./config"
+	"in-share-server/app"
+	"in-share-server/config"
 	"runtime"
 )
 import _ "github.com/joho/godotenv/autoload"
@@ -19,4 +19,3 @@ func main() {
 	app.Run(":" + config.Port)
 
 }
-

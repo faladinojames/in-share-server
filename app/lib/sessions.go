@@ -1,41 +1,42 @@
 package lib
 
 import (
-	"../db"
 	"fmt"
-	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/satori/go.uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"in-share-server/app/db"
 	"time"
 )
-import "../models"
+import "in-share-server/app/models"
 
 const collectionName string = "sessions"
 
 type UserSession struct {
-	UserId string `json:"userId" bson:"userId"`
-	SessionToken string `json:"sessionToken" bson:"sessionToken"`
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
-	ExpiresAt time.Time `json:"expiresAt" bson:"expiresAt"`
+	UserId       string    `json:"userId" bson:"userId"`
+	SessionToken string    `json:"sessionToken" bson:"sessionToken"`
+	CreatedAt    time.Time `json:"createdAt" bson:"createdAt"`
+	ExpiresAt    time.Time `json:"expiresAt" bson:"expiresAt"`
 }
 
-type Sessions struct{
+type Sessions struct {
 	DatabaseClient db.DatabaseClient
 }
-func (session *Sessions) GetUserFromToken(sessionToken string) (*models.User, error){
+
+func (session *Sessions) GetUserFromToken(sessionToken string) (*models.User, error) {
 	user := &models.User{}
 	userSession := &UserSession{}
 	err := session.DatabaseClient.FindOne(collectionName, bson.M{"sessionToken": sessionToken}, userSession)
 
-	if err != nil{
+	if err != nil {
 		// cannot find session
 		fmt.Println("no session")
 		return nil, err
 	}
 
-	fmt.Println("id",userSession.UserId )
+	fmt.Println("id", userSession.UserId)
 	err = session.DatabaseClient.FindOne("users", bson.M{"id": userSession.UserId}, user)
 
-	if err == nil{
+	if err == nil {
 		fmt.Println("returning user ", user)
 		return user, nil
 	} else {
@@ -43,8 +44,8 @@ func (session *Sessions) GetUserFromToken(sessionToken string) (*models.User, er
 		return nil, err
 	}
 }
-func (session *Sessions) Create(user *models.User) (string){
-	newSessionToken, _ := uuid.NewV4()
+func (session *Sessions) Create(user *models.User) string {
+	newSessionToken := uuid.NewV4()
 
 	now := time.Now()
 	aYearAfter := now.AddDate(1, 0, 0)
@@ -54,7 +55,7 @@ func (session *Sessions) Create(user *models.User) (string){
 	return newSessionToken.String()
 }
 
-func (session *Sessions) LogOut(sessionToken string)error{
+func (session *Sessions) LogOut(sessionToken string) error {
 
 	now := time.Now()
 

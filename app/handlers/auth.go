@@ -1,17 +1,17 @@
 package handlers
 
 import (
-	"../crypto"
-	"../db"
-	"../lib"
-	"../utils"
-	"../models"
-	"../router"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/rs/xid"
+	"go.mongodb.org/mongo-driver/bson"
+	"in-share-server/app/crypto"
+	"in-share-server/app/db"
+	"in-share-server/app/lib"
+	"in-share-server/app/models"
+	"in-share-server/app/router"
+	"in-share-server/app/utils"
 	"log"
 	"net/http"
 )
@@ -34,13 +34,10 @@ func (auth *Auth) Init() {
 	auth.Router.Post("/login", auth.login)
 	auth.Router.Post("/register", auth.register)
 
-
-
 }
 
 // Middleware function, which will be called for each request
 func (auth *Auth) checkAuth(next http.Handler) http.Handler {
-
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -64,10 +61,9 @@ func (auth *Auth) checkAuth(next http.Handler) http.Handler {
 
 		var noAuthPaths = []string{"/login", "/register", "/files", "/info"}
 
+		if utils.IncludePrefix(noAuthPaths, r.RequestURI) {
 
-		if  utils.IncludePrefix(noAuthPaths, r.RequestURI) {
-
-			if (token != ""){
+			if token != "" {
 				checkToken(token)
 				return
 			}
@@ -77,19 +73,16 @@ func (auth *Auth) checkAuth(next http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), "user", user)
 
-			next.ServeHTTP(w,  r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-
 		checkToken(token)
-
-
 
 	})
 }
 
-func (auth *Auth) login (w http.ResponseWriter, req *http.Request) {
+func (auth *Auth) login(w http.ResponseWriter, req *http.Request) {
 
 	decoder := json.NewDecoder(req.Body)
 	crypto := crypto.Crypto{}
@@ -105,17 +98,15 @@ func (auth *Auth) login (w http.ResponseWriter, req *http.Request) {
 
 	err = auth.DatabaseClient.FindOne("users", filter, user)
 
-	if err!= nil{
+	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "Invalid Username/Password")
 		return
 	}
 
-	if crypto.CheckPassword(fields.Password, user.Password){
+	if crypto.CheckPassword(fields.Password, user.Password) {
 		fmt.Println(user)
-
-
 
 		token := auth.session.Create(user)
 
@@ -135,7 +126,7 @@ func (auth *Auth) login (w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (auth *Auth) register (w http.ResponseWriter, req *http.Request){
+func (auth *Auth) register(w http.ResponseWriter, req *http.Request) {
 
 	decoder := json.NewDecoder(req.Body)
 
@@ -150,7 +141,6 @@ func (auth *Auth) register (w http.ResponseWriter, req *http.Request){
 	fields.Password = crypto.EncryptPassword(fields.Password)
 
 	guid := xid.New()
-
 
 	id := auth.DatabaseClient.Insert("users", bson.M{"id": guid.String(), "username": fields.Username, "password": fields.Password, "email": fields.Email, "phone": fields.Phone, "name": fields.Name})
 
